@@ -1,0 +1,26 @@
+.env
+.secrets/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-*/
+.ruff_cache/
+tmp/pytest-*/
+.research-agent/
+server_out.txt
+server_err.txt
+dist/
+build/
+*.egg-info/
+
+.codex/
+.ppt_build/
+.ppt_edit/
+presentation-output/
+
+# 提交仓库补充忽略
+.mimosa/
+.DS_Store
+Thumbs.db
+outputs/

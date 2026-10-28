@@ -1,0 +1,252 @@
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field
+
+from research_agent.domain.models import SearchConstraints, SearchFeedback
+
+
+class ResearchRequest(SearchConstraints):
+    name: str = Field(default="", max_length=200)
+    topic: str = Field(min_length=1)
+    research_question: str = Field(min_length=1)
+    thread_id: str | None = None
+    min_papers: int | None = Field(default=None, ge=1)
+    max_papers: int | None = Field(default=None, ge=1)
+    max_search_rounds: int | None = Field(default=None, ge=1, le=10)
+    parent_project_id: str | None = None
+    inheritance_note: str = Field(default="", max_length=1000)
+
+
+class CreateConversationRequest(SearchConstraints):
+    name: str = Field(default="", max_length=200)
+    topic: str = Field(min_length=1)
+    research_question: str = Field(min_length=1)
+    min_papers: int | None = Field(default=None, ge=1)
+    max_papers: int | None = Field(default=None, ge=1)
+    max_search_rounds: int | None = Field(default=None, ge=1, le=10)
+    parent_project_id: str | None = None
+    inheritance_note: str = Field(default="", max_length=1000)
+
+
+class ConversationUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    pinned: bool | None = None
+    archived: bool | None = None
+
+
+class ResearchRelationRequest(BaseModel):
+    parent_project_id: str = Field(min_length=1, max_length=160)
+    child_project_id: str = Field(min_length=1, max_length=160)
+    note: str = Field(default="", max_length=1000)
+
+
+class ApiEnvelope(BaseModel):
+    code: int = 0
+    message: str = "success"
+    data: Any = None
+
+
+class SearchFeedbackRequest(SearchFeedback):
+    pass
+
+
+class SearchReviewSelectionRequest(BaseModel):
+    paper_ids: list[str] = Field(default_factory=list, max_length=100)
+    selected: bool
+    all_candidates: bool = False
+
+
+class ContinueProjectRequest(BaseModel):
+    thread_id: str | None = None
+
+
+class LibraryPaperRequest(BaseModel):
+    paper_id: str = ""
+    title: str = ""
+    authors: list[str] = Field(default_factory=list)
+    year: int | None = None
+    abstract: str = ""
+    doi: str = ""
+    url: str | None = None
+    source: str = "user"
+    venue: str = ""
+    venue_type: Literal["journal", "conference"] | None = None
+    venue_acronym: str = ""
+    ccf_rank: str | None = None
+    ccf_category: str | None = None
+    ccf_year: int | None = None
+    sci_quartile: Literal["Q1", "Q2", "Q3", "Q4"] | None = None
+    index_name: str | None = None
+    impact_factor: float | None = None
+    impact_factor_year: int | None = None
+    nature_portfolio: bool = False
+    venue_rating_explanation: str = ""
+    venue_rating_source_url: str | None = None
+    venue_rating_source_label: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    starred: bool = False
+
+
+class ProjectLibraryPaperRequest(LibraryPaperRequest):
+    status: Literal["candidate", "included", "excluded", "uncertain"] = "candidate"
+    reason: str = ""
+
+
+class LibraryPaperUpdateRequest(BaseModel):
+    paper_id: str | None = None
+    title: str | None = None
+    authors: list[str] | None = None
+    year: int | None = None
+    abstract: str | None = None
+    doi: str | None = None
+    url: str | None = None
+    source: str | None = None
+    venue: str | None = None
+    venue_type: Literal["journal", "conference"] | None = None
+    venue_acronym: str | None = None
+    ccf_rank: str | None = None
+    ccf_category: str | None = None
+    ccf_year: int | None = None
+    sci_quartile: Literal["Q1", "Q2", "Q3", "Q4"] | None = None
+    index_name: str | None = None
+    impact_factor: float | None = None
+    impact_factor_year: int | None = None
+    nature_portfolio: bool | None = None
+    venue_rating_explanation: str | None = None
+    venue_rating_source_url: str | None = None
+    venue_rating_source_label: str | None = None
+    tags: list[str] | None = None
+    starred: bool | None = None
+    saved: bool | None = None
+
+
+class LibraryImportRequest(BaseModel):
+    format: Literal["bibtex", "ris"]
+    content: str = Field(min_length=1)
+    tags: list[str] = Field(default_factory=list)
+
+
+class LibraryCollectionRequest(BaseModel):
+    name: str = Field(min_length=1)
+    parent_id: str | None = None
+
+
+class LibraryCollectionPaperRequest(BaseModel):
+    pinned: bool
+
+
+class PaperReadingProgressRequest(BaseModel):
+    page: int = Field(ge=1)
+    attachment_id: str | None = None
+    project_id: str | None = None
+
+
+class LibraryBulkRequest(BaseModel):
+    library_ids: list[str] = Field(min_length=1)
+    action: Literal[
+        "archive",
+        "restore",
+        "delete",
+        "star",
+        "unstar",
+        "add_tags",
+        "remove_tags",
+        "add_collection",
+        "remove_collection",
+        "add_project",
+    ]
+    value: Any = None
+
+
+class LibraryNoteRequest(BaseModel):
+    content: str = Field(min_length=1)
+    project_id: str | None = None
+
+
+class LibraryAttachmentRequest(BaseModel):
+    name: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+    media_type: str = "application/pdf"
+
+
+class LibraryMergeRequest(BaseModel):
+    primary_id: str
+    duplicate_id: str
+
+
+class LibrarySelectionRequest(BaseModel):
+    library_ids: list[str] = Field(min_length=2, max_length=8)
+
+
+class LibraryAssistantRequest(BaseModel):
+    library_ids: list[str] = Field(default_factory=list, max_length=50)
+    question: str = Field(min_length=1)
+
+
+class ProjectChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=30000)
+
+
+class ProjectAssistantRequest(BaseModel):
+    scope: Literal["selection", "narrative", "project", "library"] = "narrative"
+    question: str = Field(min_length=1, max_length=4000)
+    selected_text: str = Field(default="", max_length=12000)
+    history: list[ProjectChatMessage] = Field(default_factory=list, max_length=40)
+
+
+class ResearchNoteRequest(BaseModel):
+    kind: Literal["note", "annotation", "qa"] = "note"
+    selected_text: str = Field(default="", max_length=12000)
+    source_section_id: str = Field(default="", max_length=240)
+    source_offset: int | None = Field(default=None, ge=0)
+    chat_id: str = Field(default="", max_length=160)
+    content: str = Field(default="", max_length=20000)
+    question: str = Field(default="", max_length=4000)
+    answer: str = Field(default="", max_length=30000)
+    citations: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
+
+
+class ResearchRelationRequest(BaseModel):
+    parent_project_id: str = Field(min_length=1, max_length=160)
+    child_project_id: str = Field(min_length=1, max_length=160)
+    relation_type: Literal["extends", "updates", "replicates"] = "extends"
+    note: str = Field(default="", max_length=1000)
+
+
+class PaperQuestionRequest(BaseModel):
+    scope: Literal["selection", "paper"] = "paper"
+    attachment_id: str | None = None
+    question: str = Field(min_length=1, max_length=4000)
+    page: int | None = Field(default=None, ge=1)
+    selected_text: str = Field(default="", max_length=12000)
+    prefix: str = Field(default="", max_length=1000)
+    suffix: str = Field(default="", max_length=1000)
+
+
+class PaperQuestionStreamRequest(BaseModel):
+    scope: Literal["selection", "paper"] = "paper"
+    attachment_id: str | None = None
+    question: str = Field(min_length=1, max_length=4000)
+    page: int | None = Field(default=None, ge=1)
+    selected_text: str = Field(default="", max_length=12000)
+    prefix: str = Field(default="", max_length=1000)
+    suffix: str = Field(default="", max_length=1000)
+    history: list[dict[str, str]] = Field(default_factory=list, max_length=40)
+
+
+class PaperAnnotationRequest(BaseModel):
+    kind: Literal["highlight", "note", "qa"]
+    attachment_id: str | None = None
+    page: int | None = Field(default=None, ge=1)
+    selected_text: str = Field(default="", max_length=12000)
+    prefix: str = Field(default="", max_length=1000)
+    suffix: str = Field(default="", max_length=1000)
+    rects: list[dict[str, float]] = Field(default_factory=list, max_length=100)
+    color: str = Field(default="yellow", max_length=32)
+    content: str = Field(default="", max_length=20000)
+    question: str = Field(default="", max_length=4000)
+    answer: str = Field(default="", max_length=30000)
+    citations: list[dict[str, Any]] = Field(default_factory=list, max_length=100)

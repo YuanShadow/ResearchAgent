@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="论文研读工作台：支持文献管理、论文精读、批注与问答"
+    />
+    <title>论文研读工作台</title>
+    <link rel="icon" href="/ui-assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/ui-assets/styles.css" />
+    <script src="/ui-assets/vendor/lucide.min.js" defer></script>
+    <script src="/ui-assets/vendor/marked.umd.js" defer></script>
+    <script src="/ui-assets/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <header class="topbar">
+      <div class="topbar-leading">
+        <button
+          id="sidebarToggle"
+          class="icon-button topbar-icon"
+          type="button"
+          aria-label="收起项目侧栏"
+          aria-controls="projectSidebar"
+          aria-expanded="true"
+          title="收起项目侧栏"
+        >
+          <i data-lucide="panel-left-close" aria-hidden="true"></i>
+        </button>
+        <button
+          id="navigationBack"
+          class="icon-button topbar-icon navigation-back"
+          type="button"
+          aria-label="返回上一个界面"
+          title="返回上一个界面"
+          hidden
+        >
+          <i data-lucide="arrow-left" aria-hidden="true"></i>
+        </button>
+        <button id="brandHome" class="brand brand-home" type="button" aria-label="返回首页" title="返回首页">
+          <span class="brand-mark" aria-hidden="true">研</span>
+          <div class="brand-copy">
+            <h1>论文研读工作台</h1>
+          </div>
+        </button>
+      </div>
+
+      <div class="topbar-actions">
+        <span id="healthBadge" class="health-badge is-checking">
+          <span class="status-dot" aria-hidden="true"></span>
+          正在连接
+        </span>
+        <div class="menu-anchor">
+          <button
+            id="toolsMenuToggle"
+            class="icon-button topbar-icon"
+            type="button"
+            aria-label="打开工具菜单"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            title="更多工具"
+          >
+            <i data-lucide="ellipsis" aria-hidden="true"></i>
+          </button>
+          <div id="toolsMenu" class="popover tools-menu" role="menu" hidden>
+            <div class="popover-heading">
+              <span>工作台工具</span>
+            </div>
+            <button id="usageGuideOpen" class="menu-item" type="button" role="menuitem">
+              <i data-lucide="circle-help" aria-hidden="true"></i>
+              <span>使用说明</span>
+            </button>
+            <a class="menu-item" href="/docs" target="_blank" rel="noreferrer" role="menuitem">
+              <i data-lucide="braces" aria-hidden="true"></i>
+              <span>API 文档</span>
+              <i class="menu-trailing" data-lucide="external-link" aria-hidden="true"></i>
+            </a>
+            <form id="projectLookupForm" class="tool-lookup">
+              <label for="projectIdInput">按项目 ID 打开</label>
+              <div class="input-row">
+                <input
+                  id="projectIdInput"
+                  type="text"
+                  placeholder="RP-20260715-..."
+                  autocomplete="off"
+                />
+                <button class="icon-button bordered" type="submit" aria-label="打开项目" title="打开项目">
+                  <i data-lucide="arrow-right" aria-hidden="true"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="appShell" class="app-shell" data-sidebar="expanded">
+      <aside id="projectSidebar" class="sidebar" aria-label="研究项目导航">
+        <div class="sidebar-primary">
+          <button id="homeToggle" class="secondary sidebar-home" type="button" title="返回首页">
+            <i data-lucide="house" aria-hidden="true"></i>
+            <span class="sidebar-label">首页</span>
+          </button>
+          <button id="newProjectToggle" class="secondary sidebar-new" type="button" title="开始新研究">
+            <i data-lucide="file-plus-2" aria-hidden="true"></i>
+            <span class="sidebar-label">开始新研究</span>
+          </button>
+          <button id="researchLibraryToggle" class="secondary sidebar-research-library" type="button" title="打开研究库">
+            <i data-lucide="folders" aria-hidden="true"></i>
+            <span class="sidebar-label">研究库</span>
+          </button>
+          <button id="libraryToggle" class="secondary sidebar-library" type="button" title="打开文献库">
+            <i data-lucide="library" aria-hidden="true"></i>
+            <span class="sidebar-label">文献库</span>
+          </button>
+        </div>
+
+        <div class="sidebar-heading">
+          <button
+            id="recentHistoryToggle"
+            class="sidebar-heading-label"
+            type="button"
+            aria-label="打开最近研究"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            title="最近研究"
+          >
+            <i data-lucide="message-circle" aria-hidden="true"></i>
+            <h2 class="sidebar-label">最近研究</h2>
+          </button>
+        </div>
+
+        <nav id="projectList" class="project-list" aria-live="polite">
+          <p class="muted small sidebar-label">正在载入项目...</p>
+        </nav>
+      </aside>
+
+      <main id="main-content" class="main-content" tabindex="-1">
+        <section id="emptyState" class="workspace-start">
+          <div class="start-rule" aria-hidden="true"></div>
+          <p class="eyebrow">开始研读</p>
+          <h2>今天想研究什么？</h2>
+          <p class="start-copy">研究一个问题，或者从文献库选择一篇论文开始精读。</p>
+          <div class="start-task-grid" aria-label="常用研究入口">
+            <button id="emptyNewProject" class="start-task-card" type="button">
+              <span class="start-task-icon"><i data-lucide="search-check" aria-hidden="true"></i></span>
+              <span class="start-task-copy">
+                <strong>研究一个问题</strong>
+                <small>检索、筛选并整理研究结果</small>
+              </span>
+              <i data-lucide="arrow-right" aria-hidden="true"></i>
+            </button>
+            <button id="emptyResearchLibrary" class="start-task-card" type="button">
+              <span class="start-task-icon"><i data-lucide="folders" aria-hidden="true"></i></span>
+              <span class="start-task-copy">
+                <strong>管理研究库</strong>
+                <small>浏览、检索与继承历史研究</small>
+              </span>
+              <i data-lucide="arrow-right" aria-hidden="true"></i>
+            </button>
+            <button id="emptyOpenLibrary" class="start-task-card" type="button">
+              <span class="start-task-icon"><i data-lucide="library" aria-hidden="true"></i></span>
+              <span class="start-task-copy">
+                <strong>管理文献库</strong>
+                <small>导入、筛选与整理已有论文</small>
+              </span>
+              <i data-lucide="arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </section>
+
+        <section id="createView" class="create-view" hidden>
+          <header class="workspace-heading">
+            <div>
+              <h2>新建研究</h2>
+            </div>
+            <button id="cancelNewProject" class="icon-button bordered" type="button" aria-label="关闭新建研究" title="关闭">
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
+          </header>
+
+          <form id="newProjectForm" class="research-brief">
+            <div class="brief-primary-fields">
+              <label class="field field-name" for="nameInput">
+                <span>研究名称 <small>（用于标识，不纳入检索）</small></span>
+                <input
+                  id="nameInput"
+                  name="name"
+                  type="text"
+                  placeholder="例如：AIOps 异常检测调研 v2"
+                  autocomplete="off"
+                  maxlength="200"
+                />
+              </label>
+
+              <label class="field field-topic" for="topicInput">
+                <span>研究主题</span>
+                <input
+                  id="topicInput"
+                  name="topic"
+                  type="text"
+                  placeholder="例如：智能运维 AIOps"
+                  autocomplete="off"
+                  required
+                />
+              </label>
+
+              <label class="field field-question" for="questionInput">
+                <span>研究问题</span>
+                <textarea
+                  id="questionInput"
+                  name="research_question"
+                  rows="1"
+                  placeholder="例如：利用大模型和小模型进行异常检测有哪些研究？"
+                  required
+                ></textarea>
+              </label>
+            </div>
+
+            <fieldset class="brief-settings brief-search-row">
+              <label class="field" for="initialMaxSearchRounds">
+                <span>检索词迭代轮次</span>
+                <input id="initialMaxSearchRounds" type="number" min="1" max="10" value="3"
+                  list="maxSearchRoundsList" />
+                <datalist id="maxSearchRoundsList">
+                  <option value="1">1 轮</option>
+                  <option value="2">2 轮</option>
+                  <option value="3">3 轮</option>
+                  <option value="4">4 轮</option>
+                  <option value="5">5 轮</option>
+                  <option value="6">6 轮</option>
+                  <option value="7">7 轮</option>
+                  <option value="8">8 轮</option>
+                  <option value="9">9 轮</option>
+                  <option value="10">10 轮</option>
+                </datalist>
+              </label>
+              <label class="field" for="initialYearFrom">
+                <span>起始年份</span>
+                <input id="initialYearFrom" type="number" min="2000" max="2026" value="2024"
+                  list="yearList" />
+              </label>
+              <label class="field" for="initialYearTo">
+                <span>结束年份</span>
+                <input id="initialYearTo" type="number" min="2000" max="2026" value="2026"
+                  list="yearList" />
+              </label>
+              <datalist id="yearList">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2019">2019</option>
+                <option value="2018">2018</option>
+                <option value="2017">2017</option>
+                <option value="2016">2016</option>
+                <option value="2015">2015</option>
+                <option value="2014">2014</option>
+                <option value="2013">2013</option>
+                <option value="2012">2012</option>
+                <option value="2011">2011</option>
+                <option value="2010">2010</option>
+                <option value="2009">2009</option>
+                <option value="2008">2008</option>
+                <option value="2007">2007</option>
+                <option value="2006">2006</option>
+                <option value="2005">2005</option>
+                <option value="2004">2004</option>
+                <option value="2003">2003</option>
+                <option value="2002">2002</option>
+                <option value="2001">2001</option>
+                <option value="2000">2000</option>
+              </datalist>
+              <label class="field" for="inheritProjectSelect">
+                <span>前序研究</span>
+                <select id="inheritProjectSelect">
+                  <option value="">不继承，独立研究</option>
+                </select>
+              </label>
+              <label class="field" for="inheritanceNote" id="inheritanceNoteField" hidden>
+                <span>继承备注</span>
+                <textarea id="inheritanceNote" rows="2" maxlength="1000"
+                  placeholder="例如：沿用父研究的数据范围，更新模型与结论；或复现其核心实验并扩展评估指标"></textarea>
+              </label>
+            </fieldset>
+
+            <div class="brief-actions">
+              <label class="quality-filter-option" for="initialPreferLibrarySearch">
+                <input id="initialPreferLibrarySearch" type="checkbox" />
+                <span>
+                  <strong>优先搜索我的文献库</strong>
+                  <small>先在本地文献、笔记和已索引 PDF 中查找，再用外部来源补充</small>
+                </span>
+              </label>
+              <button class="primary" type="submit">
+                开始研究
+                <i data-lucide="arrow-right" aria-hidden="true"></i>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section id="projectsView" class="projects-view" hidden>
+          <header class="workspace-heading projects-heading">
+            <div>
+              <h2>研究库</h2>
+              <p>沉淀研究问题、过程与成果，集中管理整个研究生命周期。</p>
+            </div>
+            <button id="projectsNewResearch" class="primary" type="button">
+              <i data-lucide="plus" aria-hidden="true"></i>
+              新建研究
+            </button>
+          </header>
+
+          <div class="projects-toolbar">
+            <label class="search-field" for="projectSearch">
+              <i data-lucide="search" aria-hidden="true"></i>
+              <input id="projectSearch" type="search" placeholder="搜索研究问题、结论、产物与笔记" autocomplete="off" />
+            </label>
+            <label class="projects-filter" for="projectSort">
+              <span>排序</span>
+              <select id="projectSort">
+                <option value="updated_desc">最近更新</option>
+                <option value="created_desc">最近创建</option>
+                <option value="title_asc">标题 A–Z</option>
+              </select>
+            </label>
+            <button
+              id="toggleProjectSelection"
+              class="secondary"
+              type="button"
+              aria-label="批量管理历史研究"
+              aria-pressed="false"
+            >
+              <i data-lucide="list-checks" aria-hidden="true"></i>
+              批量管理
+            </button>
+          </div>
+
+          <div id="projectBulkBar" class="projects-bulk-bar" hidden>
+            <div class="project-bulk-summary">
+              <span id="projectSelectedCount">已选 0 项</span>
+              <button id="selectAllProjects" class="text-button" type="button">全选当前结果</button>
+            </div>
+            <div class="project-bulk-actions">
+              <button id="archiveSelectedProjects" class="secondary compact-button" type="button" disabled>
+                <i data-lucide="archive" aria-hidden="true"></i>归档
+              </button>
+              <button id="restoreSelectedProjects" class="secondary compact-button" type="button" disabled>
+                <i data-lucide="archive-restore" aria-hidden="true"></i>恢复
+              </button>
+              <button id="deleteSelectedProjects" class="project-bulk-delete compact-button" type="button" disabled>
+                <i data-lucide="trash-2" aria-hidden="true"></i>删除
+              </button>
+              <button id="cancelProjectSelection" class="secondary compact-button" type="button">完成</button>
+            </div>
+          </div>
+
+          <div class="projects-layout">
+            <aside class="projects-navigator" aria-label="研究库导航">
+              <div class="library-nav-heading">
+                <span>智能视图</span>
+              </div>
+              <nav id="projectsSmartViews" class="library-smart-views" aria-label="研究状态筛选">
+                <button type="button" data-project-status="all" class="library-nav-item is-active">
+                  <i data-lucide="layers" aria-hidden="true"></i>
+                  <span>全部研究</span>
+                  <small id="projectsTotalCount">0</small>
+                </button>
+                <button type="button" data-project-status="active" class="library-nav-item">
+                  <i data-lucide="play-circle" aria-hidden="true"></i>
+                  <span>进行中</span>
+                  <small id="projectsActiveCount">0</small>
+                </button>
+                <button type="button" data-project-status="review" class="library-nav-item">
+                  <i data-lucide="search-check" aria-hidden="true"></i>
+                  <span>待审核</span>
+                  <small id="projectsReviewCount">0</small>
+                </button>
+                <button type="button" data-project-status="completed" class="library-nav-item">
+                  <i data-lucide="check-circle" aria-hidden="true"></i>
+                  <span>已完成</span>
+                  <small id="projectsCompletedCount">0</small>
+                </button>
+                <button type="button" data-project-status="archived" class="library-nav-item">
+                  <i data-lucide="archive" aria-hidden="true"></i>
+                  <span>已归档</span>
+                  <small id="projectsArchivedCount">0</small>
+                </button>
+              </nav>
+              <div class="library-nav-heading" id="inheritanceTreeHeading" hidden>
+                <span>继承关系树</span>
+              </div>
+              <nav id="inheritanceTree" class="inheritance-tree" hidden></nav>
+            </aside>
+
+            <section class="projects-list-panel" aria-labelledby="projectsResultSummary">
+              <div class="projects-result-line">
+                <p id="projectsResultSummary" class="projects-result-summary" aria-live="polite"></p>
+                <button id="clearSimilarityFocus" class="text-button" type="button" hidden>返回全部研究</button>
+              </div>
+              <div id="projectsManagerList" class="projects-manager-list" aria-live="polite"></div>
+            </section>
+
+            <aside id="researchPreview" class="research-preview" aria-label="研究预览">
+              <div class="research-preview-empty">
+                <i data-lucide="panel-right-open" aria-hidden="true"></i>
+                <p>选择一项研究以预览详情</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <dialog id="researchRelationDialog" class="research-relation-dialog">
+          <form id="researchRelationForm">
+            <header>
+              <div>
+                <h2>研究继承</h2>
+                <p id="researchRelationChildLabel" class="muted"></p>
+              </div>
+              <button id="closeResearchRelationDialog" class="icon-button bordered" type="button" aria-label="关闭">
+                <i data-lucide="x" aria-hidden="true"></i>
+              </button>
+            </header>
+            <div id="existingResearchRelations" class="existing-research-relations"></div>
+            <div class="research-relation-fields">
+              <label class="field" for="researchRelationParent">
+                <span>前序研究</span>
+                <select id="researchRelationParent" required>
+                  <option value="">请选择一项前序研究</option>
+                </select>
+              </label>
+              <label class="field research-relation-note" for="researchRelationNote">
+                <span>继承说明（可选）</span>
+                <textarea id="researchRelationNote" rows="3" placeholder="例如：沿用前序研究的数据范围，更新模型与结论；或复现核心实验并扩展评估指标"></textarea>
+              </label>
+            </div>
+            <footer>
+              <button id="cancelResearchRelation" class="secondary" type="button">取消</button>
+              <button class="primary" type="submit">保存关系</button>
+            </footer>
+          </form>
+        </dialog>
+
+        <section id="libraryView" class="library-view" hidden>
+          <header class="workspace-heading library-heading">
+            <div>
+              <h2>文献库</h2>
+              <p>统一保存论文元数据，并查看它们参与过的研究项目。</p>
+            </div>
+            <div class="library-export-actions">
+              <a class="secondary" href="/api/library/export?format=bibtex">导出 BibTeX</a>
+              <a class="secondary" href="/api/library/export?format=ris">导出 RIS</a>
+            </div>
+          </header>
+
+          <div class="library-toolbar">
+            <label class="search-field" for="librarySearch">
+              <i data-lucide="search" aria-hidden="true"></i>
+              <input id="librarySearch" type="search" placeholder="按标题、作者、DOI 或标签搜索" />
+            </label>
+            <button id="refreshLibrary" class="secondary" type="button">
+              <i data-lucide="refresh-cw" aria-hidden="true"></i>
+              刷新
+            </button>
+            <button id="askLibrary" class="primary" type="button">
+              <i data-lucide="sparkles" aria-hidden="true"></i>
+              询问文献库
+            </button>
+          </div>
+
+          <details class="library-import">
+            <summary>导入 BibTeX / RIS</summary>
+            <div class="library-import-fields">
+              <label class="field" for="libraryImportFormat">
+                <span>格式</span>
+                <select id="libraryImportFormat">
+                  <option value="bibtex">BibTeX</option>
+                  <option value="ris">RIS</option>
+                </select>
+              </label>
+              <label class="field library-import-content" for="libraryImportContent">
+                <span>文献内容</span>
+                <textarea id="libraryImportContent" rows="7" placeholder="粘贴 BibTeX 或 RIS 内容"></textarea>
+              </label>
+              <label class="field" for="libraryImportTags">
+                <span>标签</span>
+                <input id="libraryImportTags" type="text" placeholder="逗号分隔，可选" />
+              </label>
+              <button id="importLibrary" class="primary" type="button">导入文献</button>
+            </div>
+          </details>
+
+          <div id="libraryLayout" class="library-layout">
+            <aside class="library-navigator" aria-label="文献库导航">
+              <div class="library-nav-heading">
+                <span>智能视图</span>
+              </div>
+              <nav id="librarySmartViews" class="library-smart-views"></nav>
+              <div class="library-nav-heading library-collection-heading">
+                <span>研究文件夹</span>
+                <button id="newCollection" class="icon-button" type="button" aria-label="新建研究文件夹" title="新建研究文件夹">
+                  <i data-lucide="folder-plus" aria-hidden="true"></i>
+                </button>
+              </div>
+              <nav id="libraryCollections" class="library-collections"></nav>
+              <button id="findDuplicates" class="library-utility-button" type="button">
+                <i data-lucide="copy-check" aria-hidden="true"></i>
+                检查重复项
+              </button>
+            </aside>
+
+            <section class="library-results" aria-labelledby="libraryListTitle">
+              <div class="library-list-heading">
+                <h3 id="libraryListTitle">全部文献</h3>
+                <span id="libraryCount">0 篇</span>
+              </div>
+              <div id="libraryBulkBar" class="library-bulk-bar" hidden>
+                <strong id="librarySelectedCount">已选 0 篇</strong>
+                <select id="libraryBulkAction" aria-label="批量操作">
+                  <option value="">选择操作</option>
+                  <option value="star">标为重点</option>
+                  <option value="add_tags">添加标签</option>
+                  <option value="add_collection">加入文件夹</option>
+                  <option value="add_project">加入项目</option>
+                  <option value="export_bibtex">导出所选 BibTeX</option>
+                  <option value="export_ris">导出所选 RIS</option>
+                  <option value="archive">移入回收站</option>
+                  <option value="restore">恢复</option>
+                  <option value="delete">永久删除</option>
+                </select>
+                <button id="applyLibraryBulk" class="secondary" type="button">应用</button>
+                <button id="compareLibrarySelection" class="secondary" type="button">对照阅读</button>
+                <button id="clearLibrarySelection" class="quiet-button" type="button">清除选择</button>
+              </div>
+              <div id="libraryList" class="library-list" aria-live="polite"></div>
+            </section>
+            <aside id="libraryDetail" class="library-detail" aria-label="文献详情" hidden>
+              <div class="library-detail-empty">
+                <i data-lucide="book-open" aria-hidden="true"></i>
+                <p>选择一篇文献查看详情</p>
+              </div>
+            </aside>
+          </div>
+
+          <section id="libraryComparePanel" class="library-compare-panel" hidden>
+            <header>
+              <div>
+                <h3>文献库研究助手</h3>
+              </div>
+              <button id="closeLibraryCompare" class="icon-button bordered" type="button" aria-label="关闭对照视图">
+                <i data-lucide="x" aria-hidden="true"></i>
+              </button>
+            </header>
+            <div id="libraryCompareTable" class="library-compare-table"></div>
+            <form id="libraryAssistantForm" class="library-assistant-form">
+              <label class="field" for="libraryAssistantQuestion">
+                <span id="libraryAssistantScopeLabel">向整个文献库提问</span>
+                <textarea id="libraryAssistantQuestion" rows="3" placeholder="例如：哪些证据支持这个判断？不同论文的方法和局限有何差异？"></textarea>
+              </label>
+              <button class="primary" type="submit">
+                <i data-lucide="send" aria-hidden="true"></i>
+                开始检索
+              </button>
+            </form>
+            <div id="libraryAssistantAnswer" class="library-assistant-answer" hidden></div>
+          </section>
+        </section>
+
+        <section id="paperWorkspaceView" class="paper-workspace" hidden>
+          <header class="paper-workspace-header">
+            <div class="paper-workspace-title">
+              <div class="paper-workspace-meta">
+                <button id="paperWorkspaceBack" class="text-button" type="button">
+                  <i data-lucide="arrow-left" aria-hidden="true"></i>
+                  返回文献库
+                </button>
+              </div>
+              <h2 id="paperWorkspaceTitle">论文研读</h2>
+              <p id="paperWorkspaceMeta"></p>
+            </div>
+            <button
+              id="paperPanelToggle"
+              class="secondary paper-panel-toggle"
+              type="button"
+              aria-expanded="true"
+              aria-controls="paperChatPanel"
+            >
+              <i data-lucide="panel-right-close" aria-hidden="true"></i>
+              <span>收起研读工具</span>
+            </button>
+          </header>
+
+          <div class="paper-workspace-layout">
+            <section class="paper-reader" aria-label="PDF 全文阅读器">
+              <div class="paper-reader-toolbar">
+                <div class="paper-page-status">
+                  <i data-lucide="file-text" aria-hidden="true"></i>
+                  <span id="paperPageStatus">准备加载 PDF</span>
+                </div>
+                <div class="paper-zoom-controls">
+                  <button id="paperZoomOut" class="icon-button bordered" type="button" aria-label="缩小">
+                    <i data-lucide="zoom-out" aria-hidden="true"></i>
+                  </button>
+                  <span id="paperZoomLabel">100%</span>
+                  <button id="paperZoomIn" class="icon-button bordered" type="button" aria-label="放大">
+                    <i data-lucide="zoom-in" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              <div id="paperSelectionBar" class="paper-selection-bar" hidden>
+                <div>
+                  <strong>已选择第 <span id="paperSelectionPage">—</span> 页文本</strong>
+                  <p id="paperSelectionPreview"></p>
+                </div>
+                <div class="paper-selection-actions">
+                  <button id="highlightSelection" class="secondary" type="button">
+                    <i data-lucide="highlighter" aria-hidden="true"></i>
+                    高亮
+                  </button>
+                  <button id="noteSelection" class="secondary" type="button">
+                    <i data-lucide="message-square-plus" aria-hidden="true"></i>
+                    添加批注
+                  </button>
+                  <button id="askSelection" class="primary" type="button">
+                    <i data-lucide="message-circle-question" aria-hidden="true"></i>
+                    针对选文提问
+                  </button>
+                </div>
+              </div>
+              <div id="paperPdfPages" class="paper-pdf-pages" aria-live="polite">
+                <div class="paper-pdf-placeholder">
+                  <i data-lucide="loader-circle" aria-hidden="true"></i>
+                  <p>正在准备论文全文…</p>
+                </div>
+              </div>
+              <div
+                id="paperHorizontalScroller"
+                class="paper-horizontal-scroller"
+                aria-label="横向滚动论文"
+                hidden
+              >
+                <div id="paperHorizontalScrollContent" class="paper-horizontal-scroll-content"></div>
+              </div>
+            </section>
+
+            <div
+              id="paperChatResizer"
+              class="paper-chat-resizer"
+              role="separator"
+              tabindex="0"
+              aria-label="调整论文与研读工具宽度"
+              aria-orientation="vertical"
+            >
+              <span aria-hidden="true"></span>
+            </div>
+            <aside id="paperChatPanel" class="paper-chat-panel" aria-label="论文聊天与批注">
+              <header class="paper-chat-panel-header">
+                <div class="paper-chat-tabs" role="tablist">
+                  <button class="is-active" type="button" data-paper-tab="ask">聊天</button>
+                  <button type="button" data-paper-tab="annotations">批注</button>
+                  <button type="button" data-paper-tab="card">精读卡</button>
+                </div>
+                <button
+                  id="paperPanelClose"
+                  class="icon-button"
+                  type="button"
+                  aria-label="收起研读工具"
+                  title="收起研读工具"
+                >
+                  <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+              </header>
+
+              <section id="paperAskPanel" class="paper-chat-pane">
+                <div id="paperChatArea" class="paper-chat-area"></div>
+              </section>
+
+              <section id="paperAnnotationsPanel" class="paper-chat-pane" hidden>
+                <form id="paperNoteForm" class="paper-note-form" hidden>
+                  <label for="paperNoteInput">为选中文本添加批注</label>
+                  <textarea id="paperNoteInput" rows="4" placeholder="记录你的理解、疑问或后续动作"></textarea>
+                  <div>
+                    <button id="cancelPaperNote" class="quiet-button" type="button">取消</button>
+                    <button class="primary" type="submit">保存批注</button>
+                  </div>
+                </form>
+                <div id="paperAnnotationsList" class="paper-annotations-list"></div>
+              </section>
+
+              <section id="paperCardPanel" class="paper-chat-pane" hidden>
+                <div id="paperReadingCard" class="paper-reading-card">
+                  <p class="muted">尚未生成精读卡。</p>
+                  <button id="generateReadingCard" class="primary" type="button">
+                    <i data-lucide="sparkles" aria-hidden="true"></i>
+                    生成精读卡
+                  </button>
+                  <a id="exportReadingReport" class="text-button" href="#" download hidden>
+                    <i data-lucide="download" aria-hidden="true"></i>
+                    导出 Markdown
+                  </a>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section id="projectView" class="project-view" hidden>
+          <header class="project-masthead">
+            <div class="project-masthead-left">
+              <div class="project-meta">
+                <span id="stageBadge" class="stage-badge">创建</span>
+                <button id="copyProjectId" class="project-id" type="button" title="复制项目 ID">
+                  <span id="projectIdLabel"></span>
+                  <i data-lucide="copy" aria-hidden="true"></i>
+                </button>
+              </div>
+              <h2 id="projectName" class="project-name-heading"></h2>
+              <p id="projectTopicLine" class="project-topic-line"></p>
+            </div>
+            <ol id="stageStepper" class="stage-stepper" aria-label="研究进度"></ol>
+          </header>
+
+          <section id="projectSummary" class="project-summary" hidden>
+            <section id="primaryOutcome" class="primary-outcome" hidden></section>
+            <section id="currentTask" class="current-task">
+              <p class="eyebrow">当前任务</p>
+              <h3 id="nextActionTitle">准备开始</h3>
+              <p id="nextActionText">选择或创建一个研究项目后，这里会显示下一步。</p>
+            </section>
+            <div id="resultHighlights" class="metric-strip" aria-label="项目关键指标"></div>
+          </section>
+
+          <section
+            id="runPanel"
+            class="run-panel"
+            aria-labelledby="runPhaseTitle"
+            aria-busy="true"
+            hidden
+          >
+            <div class="run-status-layout">
+              <div id="runVisualizer" class="run-visualizer" data-phase="thinking" aria-hidden="true">
+                <span class="run-orbit run-orbit-outer"></span>
+                <span class="run-orbit run-orbit-inner"></span>
+                <span class="run-scan-line"></span>
+                <span class="run-particle run-particle-one"></span>
+                <span class="run-particle run-particle-two"></span>
+                <span class="run-particle run-particle-three"></span>
+                <span id="runPhaseIcon" class="run-phase-icon">
+                  <i data-lucide="brain" aria-hidden="true"></i>
+                </span>
+              </div>
+
+              <div class="run-status-copy">
+                <div class="run-status-meta">
+                  <p class="eyebrow">研究进行中</p>
+                  <div class="run-timing" aria-label="项目运行时间">
+                    <span id="runElapsed" class="run-elapsed">已运行 00:00</span>
+                  </div>
+                </div>
+                <h3 id="runPhaseTitle">正在准备文献检索</h3>
+                <p id="runStatusText">正在分析研究问题并生成检索方案...</p>
+              </div>
+            </div>
+            <ol id="activityLog" class="activity-log" aria-live="polite"></ol>
+          </section>
+
+          <section id="reviewPanel" class="review-panel" hidden>
+            <div class="review-status-bar">
+              <div class="review-status-stats">
+                <strong id="candidateCount">0</strong> <span>篇候选</span>
+                <span class="review-status-sep"></span>
+                <strong id="selectedCount">0</strong> <span>篇已选</span>
+                <span class="review-status-sep"></span>
+                <span id="reviewConstraints" class="review-constraints"></span>
+              </div>
+              <button id="toggleSearchSummary" class="secondary compact-button" type="button" aria-expanded="true">
+                <i data-lucide="chevron-up" aria-hidden="true"></i>
+                检索详情
+              </button>
+            </div>
+
+            <div id="reviewSearchSummary" class="review-search-summary">
+              <div id="reviewQueryRounds" class="review-query-rounds"></div>
+            </div>
+            <div id="reviewNotice" class="review-notice" role="status" hidden></div>
+
+            <div class="review-toolbar">
+              <label class="search-field" for="candidateFilter">
+                <i data-lucide="search" aria-hidden="true"></i>
+                <input
+                  id="candidateFilter"
+                  type="search"
+                  placeholder="按标题、作者或 DOI 筛选"
+                />
+              </label>
+              <div class="selection-actions">
+                <button id="selectAllCandidates" class="text-button" type="button">全选全部</button>
+                <button id="clearAllCandidates" class="text-button" type="button">取消全部</button>
+                <span aria-hidden="true" class="selection-actions-gap"></span>
+                <button id="selectAll" class="text-button" type="button">全选本页</button>
+                <button id="clearAll" class="text-button" type="button">取消本页</button>
+                <span class="toolbar-stats-inline">
+                  <strong id="toolbarCandidateCount">0</strong> 篇候选
+                  <span class="review-status-sep"></span>
+                  <strong id="toolbarSelectedCount">0</strong> 篇已选
+                </span>
+                <button id="acceptReview" class="primary compact-button" type="button">确认并开始研究</button>
+              </div>
+            </div>
+
+            <div id="candidateGrid" class="candidate-grid"></div>
+            <nav id="candidatePagination" class="review-pagination" aria-label="候选论文分页">
+              <button id="candidatePrevPage" class="secondary" type="button">上一页</button>
+              <span id="candidatePageStatus">第 1 / 1 页</span>
+              <button id="candidateNextPage" class="secondary" type="button">下一页</button>
+              <label for="candidatePageSize">
+                每页
+                <select id="candidatePageSize">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="50">50</option>
+                </select>
+                篇
+              </label>
+            </nav>
+
+            <section id="filteredCandidatesPanel" class="filtered-candidates-panel" hidden>
+              <div class="section-heading-row compact">
+                <div>
+                  <h3>未达到筛选要求的论文</h3>
+                </div>
+                <span><strong id="filteredCandidateCount">0</strong> 篇</span>
+              </div>
+              <p class="filtered-candidates-help">
+                这些论文不会自动进入候选集。你可以查看原因，并手动加入认为相关的论文。
+              </p>
+              <div id="filteredCandidateGrid" class="filtered-candidate-grid"></div>
+              <nav id="filteredCandidatePagination" class="review-pagination" aria-label="未达要求论文分页">
+                <button id="filteredCandidatePrevPage" class="secondary" type="button">上一页</button>
+                <span id="filteredCandidatePageStatus">第 1 / 1 页</span>
+                <button id="filteredCandidateNextPage" class="secondary" type="button">下一页</button>
+              </nav>
+            </section>
+
+            <section class="feedback-panel">
+              <div class="section-heading-row compact">
+                <div>
+                  <h3>调整候选集</h3>
+                </div>
+                <span class="optional-label">选填</span>
+              </div>
+
+              <div class="review-capacity" role="note">
+                <div>
+                  <strong>系统精读容量</strong>
+                  <small>用于控制全文读取、模型调用和失败重试的工作量</small>
+                </div>
+                <span id="paperCapacity">已选 0 篇</span>
+              </div>
+
+              <div class="feedback-grid">
+                <label for="supplementalQueries">
+                  <span>补充联网检索词</span>
+                  <small>仅“更新候选集”时执行；换行分隔，最多 3 条</small>
+                </label>
+                <textarea id="supplementalQueries" rows="3" placeholder="例如：3D visual grounding benchmark"></textarea>
+
+                <label for="manualDois">
+                  <span>手动加入 DOI</span>
+                  <small>换行或逗号分隔</small>
+                </label>
+                <textarea id="manualDois" rows="3" placeholder="10.1000/example"></textarea>
+              </div>
+
+              <div class="feedback-actions">
+                <div>
+                  <button id="undoReview" class="secondary" type="button" hidden>撤销上一步</button>
+                  <button id="refineReview" class="secondary" type="button">更新候选集</button>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section id="continuePanel" class="continue-panel" hidden>
+            <div>
+              <p id="continueEyebrow" class="eyebrow">恢复研究</p>
+              <h3 id="continueTitle">继续未完成的研究</h3>
+              <p id="continueText">系统将从已保存的进度继续执行。</p>
+            </div>
+            <div class="continue-actions">
+              <button id="continueResearch" class="primary" type="button">
+                <span id="continueButtonLabel">恢复研究</span>
+                <i data-lucide="arrow-right" aria-hidden="true"></i>
+              </button>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="inspectorBackdrop" class="inspector-backdrop" hidden></div>
+    <aside id="projectInspector" class="project-inspector" aria-label="研究记录" aria-hidden="true" inert>
+      <header class="inspector-header">
+        <div>
+          <h2>研究记录</h2>
+        </div>
+        <button id="closeInspector" class="icon-button bordered" type="button" aria-label="关闭研究记录" title="关闭">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="inspector-tabs" role="tablist" aria-label="研究记录视图">
+        <button id="processTab" class="inspector-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="processPanel">过程</button>
+        <button id="artifactsTab" class="inspector-tab" type="button" role="tab" aria-selected="false" aria-controls="artifactsPanel">产物</button>
+      </div>
+
+      <section id="projectDetails" class="inspector-body" hidden>
+        <section id="processPanel" class="inspector-panel" role="tabpanel" aria-labelledby="processTab">
+          <div class="inspector-section-heading">
+            <h3>状态变化</h3>
+          </div>
+          <ol id="eventTimeline" class="event-timeline"></ol>
+        </section>
+        <section id="artifactsPanel" class="inspector-panel" role="tabpanel" aria-labelledby="artifactsTab" hidden>
+          <div class="inspector-section-heading">
+            <h3>研究产物</h3>
+            <div id="artifactSummary" class="artifact-summary"></div>
+          </div>
+          <div id="artifactList" class="artifact-list"></div>
+        </section>
+      </section>
+    </aside>
+
+    <div id="usageGuideBackdrop" class="usage-guide-backdrop" hidden></div>
+    <section
+      id="usageGuide"
+      class="usage-guide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="usageGuideTitle"
+      aria-describedby="usageGuideDescription"
+      hidden
+    >
+      <header class="usage-guide-header">
+        <div>
+          <h2 id="usageGuideTitle">欢迎使用论文研读工作台</h2>
+        </div>
+        <button
+          id="usageGuideClose"
+          class="icon-button bordered"
+          type="button"
+          aria-label="关闭使用说明"
+          title="关闭"
+        >
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <p id="usageGuideDescription" class="usage-guide-intro">
+        从研究问题到证据综述，只需按下面的流程操作。
+      </p>
+      <ol class="usage-guide-steps">
+        <li>
+          <i data-lucide="file-plus-2" aria-hidden="true"></i>
+          <div><strong>新建研究</strong><span>填写主题、研究问题和检索范围，启动文献检索。</span></div>
+        </li>
+        <li>
+          <i data-lucide="list-checks" aria-hidden="true"></i>
+          <div><strong>审核候选</strong><span>勾选相关论文；结果不足时可补充关键词或 DOI。</span></div>
+        </li>
+        <li>
+          <i data-lucide="play" aria-hidden="true"></i>
+          <div><strong>自动研究</strong><span>确认候选后，智能体会立即开始论文精读、结果整理和综述写作。</span></div>
+        </li>
+        <li>
+          <i data-lucide="file-check-2" aria-hidden="true"></i>
+          <div><strong>查看成果</strong><span>在项目页面阅读综述，并通过“研究记录”查看过程与产物。</span></div>
+        </li>
+        <li>
+          <i data-lucide="library" aria-hidden="true"></i>
+          <div><strong>管理文献</strong><span>在文献库中导入、整理、比较论文，并围绕文献提问。</span></div>
+        </li>
+      </ol>
+
+      <footer class="usage-guide-footer">
+        <p><i data-lucide="info" aria-hidden="true"></i>稍后可从右上角“更多工具 → 使用说明”再次打开。</p>
+        <button id="usageGuideDismiss" class="primary" type="button">开始使用</button>
+      </footer>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>
